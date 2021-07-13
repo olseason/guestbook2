@@ -11,143 +11,134 @@ import java.util.List;
 import com.javaex.vo.GuestbookVo;
 
 public class GuestbookDao {
-	
-	// field
-	private Connection conn = null;
-	private PreparedStatement pstmt = null;
-	private ResultSet rs = null;
-	
-	private String driver = "oracle.jdbc.driver.OracleDriver";
-	private String url = "jdbc:oracle:thin:@localhost:1521:xe";
-	private String id = "webdb";
-	private String pw = "webdb";
-	
-	// connection method
-	private void getConnection() {
-		try {
-			Class.forName(driver);
-			conn = DriverManager.getConnection(url, id, pw);
-		} catch (ClassNotFoundException e) {
-			System.out.println("ERROR: 드라이버 로딩 실패 " + e);
-		} catch (SQLException e) {
-			System.out.println("ERROR: " + e);
-		}
-	}
-	
-	// close method
-	private void getClose() {
-		try {
-			if (conn != null)
-				conn.close();
-			if (pstmt != null)
-				pstmt.close();
-			if (rs != null)
-				rs.close();
-		} catch (SQLException e) {
-			System.out.println("ERROR: " + e);
-		}
-	}
-	
-	// INSERT DB
-	public int insert(GuestbookVo g) {
-		int count = -1;
-		
-		getConnection();
-		
-		try {
-			pstmt = conn.prepareStatement(
-					" INSERT INTO "
-					+ " 		guestbook "
-					+ " VALUES ( "
-					+ " 	sqc_no.NEXTVAL, ?, ?, ?, sysdate ) "
-					);
 
-			pstmt.setString(1, g.getName());
-			pstmt.setString(2, g.getPassword());
-			pstmt.setString(3, g.getContent());
-			
-			count = pstmt.executeUpdate();
-			
-			if (count > 0) {
-				System.out.println("[" + g.getName() + "]님이 글을 작성하셨습니다.");
-			} else {
-				System.out.println("ERROR: " + count + " [관리자에게 문의하세요]");
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		getClose();
-		
-		return count;
-	}
-	
-	// SELECT DB
-	public List<GuestbookVo> getList() {
-		List<GuestbookVo> guestbookList = new ArrayList<GuestbookVo>();
-		
-		getConnection();
-		
-		try {
-			pstmt = conn.prepareStatement(
-					" SELECT "
-					+ " 	no, "
-					+ " 	name, "
-					+ " 	password, "
-					+ " 	content, "
-					+ " 	reg_date "
-					+ " FROM "
-					+ " 	guestbook "
-					+ " ORDER BY "
-					+ " 	no ASC "
-					);
-			
-			rs = pstmt.executeQuery();
-			
-			while (rs.next()) {
-				guestbookList.add(new GuestbookVo(rs.getInt("no"), rs.getString("name"), rs.getString("password"), rs.getString("content"), rs.getString("reg_date")));
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		getClose();
+	//Field
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
 
-		return guestbookList;
-	}
-	
-	// DELETE DB
-	public int delete(GuestbookVo g) {
-		int count = -1;
+		String driver = "oracle.jdbc.driver.OracleDriver";
+		String url = "jdbc:oracle:thin:@localhost:1521:xe";
+		String id = "webdb";
+		String pw = "webdb";
 		
-		getConnection();
-		
-		try {
-			pstmt = conn.prepareStatement(
-					" DELETE FROM "
-					+ " 		guestbook "
-					+ " WHERE "
-					+ " 	no = ? "
-					+ " 	AND password = ? "
-					);
-			 
-			pstmt.setInt(1, g.getNo());
-			pstmt.setString(2, g.getPassword());
-			
-			count = pstmt.executeUpdate();
-			
-			if (count > 0) {
-				System.out.println("[" + g.getNo() + "]번 글이 삭제 되었습니다.");
-			} else {
-				System.out.println("ERROR: " + count + " [관리자에게 문의하세요]");
+		private void getConnection() {
+			try {
+				// 1. JDBC 드라이버 (Oracle) 로딩
+				Class.forName(driver);
+
+				// 2. Connection 얻어오기
+				conn = DriverManager.getConnection(url, id, pw);
+			} catch (ClassNotFoundException e) {
+				System.out.println("error: 드라이버 로딩 실패 - " + e);
+			} catch (SQLException e) {
+				System.out.println("error:" + e);
 			}
-		} catch (SQLException e) {
-			e.printStackTrace();
 		}
 		
-		getClose();
+		private void close() {
+			try {
+				if (pstmt != null) {
+					pstmt.close();
+				}
+				if (conn != null) {
+					conn.close();
+				}
+			} catch (SQLException e) {
+				System.out.println("error:" + e);
+			}
+
+		}
 		
-		return count;
-	}
-	
-}
+		//SelectAll
+		public List<GuestbookVo> getList() {
+
+			// DB에서 리스트 가져옴
+			List<GuestbookVo> arrayList = new ArrayList<GuestbookVo>();
+
+			getConnection();
+
+			try {
+
+				String query = "";
+				query += " select guestbook_no, ";
+				query += "		  name, ";
+				query += "        password, ";
+				query += "        content, ";
+				query += "        reg_date ";
+				query += " from guestbook ";
+				query += " order by guestbook_no asc ";
+				
+				pstmt = conn.prepareStatement(query);
+				rs = pstmt.executeQuery();
+
+				while (rs.next()) {
+					int guestbookNo = rs.getInt("guestbook_no");
+					String Name = rs.getString("name");
+					String Pw = rs.getString("password");
+					String Content = rs.getString("content");
+					String Date = rs.getString("reg_date");
+
+					GuestbookVo guestbookVo = new GuestbookVo(guestbookNo, Name, Pw, Content, Date);
+
+					arrayList.add(guestbookVo);
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			close();
+			return arrayList;
+		}
+		
+		//Insert
+		
+		public int guestbookInsert(GuestbookVo guestbookVo) {
+			int count = -1;
+
+			getConnection();
+
+			try {
+				String query = "";
+				query += " insert into guestbook ";
+				query += " values(seq_guestbook_no.nextval, ?, ?, ?, sysdate) ";
+				pstmt = conn.prepareStatement(query);
+				pstmt.setString(1, guestbookVo.getName());
+				pstmt.setString(2, guestbookVo.getPassword());
+				pstmt.setString(3, guestbookVo.getContent());
+
+				count = pstmt.executeUpdate();
+
+				// 결과처리
+				System.out.println(count + "건이 등록되었습니다.");
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			close();
+			return count;
+		}
+		
+		//Delete
+		
+		public int guestbookDelete(GuestbookVo g) {
+			int count = -1;
+
+			getConnection();
+
+			try {
+				String query = "";
+				query += " delete from guestbook ";
+				query += " where guestbook_no = ? ";
+				query += " and password =  ?";
+				pstmt = conn.prepareStatement(query);
+				pstmt.setInt(1, g.getGuestbook_no());
+				pstmt.setString(2, g.getPassword());
+
+				count = pstmt.executeUpdate();
+				System.out.println(count + "건이 삭제되었습니다.");
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			close();
+			return count;
+		}
+}		
